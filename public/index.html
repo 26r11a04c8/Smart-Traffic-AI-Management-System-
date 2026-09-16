@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyHub Workspace</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="styles.css" rel="stylesheet" />
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+
+  <!-- Served automatically by the Socket.IO server (server.js) at this
+       path — no CDN needed, and it only exists when the server is
+       actually running, which is exactly when Stream/rooms can work. -->
+  <script src="/socket.io/socket.io.js" defer></script>
+
+  <!-- Order matters: each file attaches functions to window and later
+       files call earlier ones. `defer` preserves this document order. -->
+  <script src="js/utils.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/profile.js" defer></script>
+  <script src="js/background.js" defer></script>
+  <script src="js/navigation.js" defer></script>
+  <script src="js/header.js" defer></script>
+  <script src="js/tasks.js" defer></script>
+  <script src="js/alarms.js" defer></script>
+  <script src="js/dashboard.js" defer></script>
+  <script src="js/pomodoro.js" defer></script>
+  <script src="js/notes.js" defer></script>
+  <script src="js/friends.js" defer></script>
+  <script src="js/webrtc.js" defer></script>
+  <script src="js/rooms.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+
+<body>
+
+  <div id="canvas-container"></div>
+  <div id="customBackgroundLayer" class="hidden"></div>
+  <div id="toastHost" aria-live="polite"></div>
+
+  <!-- DASHBOARD WORKSPACE -->
+  <div id="dashboardView">
+    <div id="sidebar" class="p-3">
+      <div class="d-flex align-items-center gap-2 mb-4 px-2 brand-clickable" id="brandLogo" title="Go to Dashboard">
+        <i class="bi bi-box-seam-fill text-primary fs-4"></i>
+        <span class="fw-bold fs-5">StudyHub</span>
+      </div>
+
+      <a class="sidebar-link active" data-view="dashboard"><i class="bi bi-house-door"></i> Dashboard</a>
+
+      <div class="nav-section-title">CHILL</div>
+      <a class="sidebar-link" data-view="stream"><i class="bi bi-camera-video"></i> Stream</a>
+      <a class="sidebar-link" data-view="friends"><i class="bi bi-person-plus"></i> Friends</a>
+
+      <div class="nav-section-title">STUDY</div>
+      <a class="sidebar-link" data-view="pomodoro"><i class="bi bi-clock-history"></i> Pomodoro</a>
+      <a class="sidebar-link" data-view="notes"><i class="bi bi-journal-text"></i> Notes</a>
+
+      <div class="nav-section-title">WORK</div>
+      <a class="sidebar-link" data-view="tasks"><i class="bi bi-check2-square"></i> Tasks</a>
+      <a class="sidebar-link" data-view="alarm"><i class="bi bi-alarm"></i> Alarm</a>
+
+      <div class="nav-section-title">YOU</div>
+      <a class="sidebar-link" id="editProfileBtn"><i class="bi bi-person-circle"></i> <span id="currentProfileName">Set your name</span></a>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <div id="main-content">
+
+      <!-- VIEW: DASHBOARD -->
+      <div id="view-dashboard" class="app-view">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div>
+            <h2 class="fw-bold mb-1" id="greetingHeader">Good day</h2>
+            <p class="text-secondary mb-0 fs-6" id="quoteHeader">"Focus on being productive instead of busy."</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="icon-btn" id="bgSettingsBtn" title="Customize background">
+              <i class="bi bi-image"></i>
+            </button>
+            <div class="text-end">
+              <span class="badge bg-purple px-3 py-2 border border-secondary" id="localClock" style="font-size: 1rem;">--:--:--</span>
+              <div class="text-secondary small mt-1" id="userLocation">Detecting location...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="card dashboard-panel border-0 h-100" style="background-color: var(--card-bg);">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 class="fw-bold text-uppercase small text-secondary mb-1">Tasks</h6>
+                    <p class="mb-0 text-light small" id="taskProgressSummary">0 of 0 tasks completed</p>
+                  </div>
+                  <button class="btn btn-outline-light btn-sm rounded-pill px-3" data-view="tasks">
+                    <i class="bi bi-pencil me-1"></i> Manage
+                  </button>
+                </div>
+                <div class="d-flex flex-column gap-2" id="dashboardTasksList"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card dashboard-panel border-0 h-100" style="background-color: var(--card-bg);">
+              <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <h6 class="fw-bold text-uppercase small text-secondary mb-1">Alarms</h6>
+                    <p class="mb-0 text-light small" id="alarmSummaryLine">No alarms set</p>
+                  </div>
+                  <button class="btn btn-outline-light btn-sm rounded-pill px-3" data-view="alarm">
+                    <i class="bi bi-alarm me-1"></i> Manage
+                  </button>
+                </div>
+                <div class="d-flex flex-column gap-2" id="dashboardAlarmsList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-0" style="background-color: var(--card-bg);">
+          <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <h6 class="fw-bold mb-1"><i class="bi bi-camera-video me-2"></i>Study Rooms</h6>
+              <p class="text-secondary small mb-0">Talk over camera, mic, and chat with others — under Stream.</p>
+            </div>
+            <button class="btn btn-primary rounded-pill px-4" data-view="stream">Go to Stream</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: FRIENDS -->
+      <div id="view-friends" class="app-view hidden">
+        <h2 class="fw-bold mb-4">Friends</h2>
+
+        <ul class="nav nav-tabs nav-tabs-custom mb-4 border-secondary" id="friendsTab">
+          <li class="nav-item"><a class="nav-link active" data-tab="recent">Recent</a></li>
+          <li class="nav-item"><a class="nav-link" data-tab="friends">Friends</a></li>
+          <li class="nav-item"><a class="nav-link" data-tab="requests">Friend Requests</a></li>
+          <li class="nav-item"><a class="nav-link" data-tab="find">Find Friends</a></li>
+          <li class="nav-item"><a class="nav-link" data-tab="blocked">Blocked Users</a></li>
+        </ul>
+
+        <div class="mb-4 position-relative">
+          <input type="text" id="friendSearchInput" class="form-control bg-dark text-light border-secondary py-2 px-4" placeholder="Search friends..." />
+        </div>
+
+        <div class="d-flex flex-column gap-3" id="friendsListContainer"></div>
+      </div>
+
+      <!-- VIEW: STREAM (rooms browse, favourites, create/join) -->
+      <div id="view-stream" class="app-view hidden">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="fw-bold mb-1">Stream</h2>
+            <p class="text-secondary small mb-0">Join a room to talk over camera and mic, or just chat by text.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createRoomModal">
+            <i class="bi bi-plus-lg me-1"></i>Create Room
+          </button>
+        </div>
+
+        <ul class="nav nav-tabs nav-tabs-custom mb-3 border-secondary" id="streamTab">
+          <li class="nav-item"><a class="nav-link active" data-stream-tab="browse">Browse Rooms</a></li>
+          <li class="nav-item"><a class="nav-link" data-stream-tab="favourites">Favourites</a></li>
+        </ul>
+
+        <div class="d-flex gap-2 flex-wrap mb-3">
+          <input type="text" id="roomSearchInput" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Search rooms..." style="width: 220px;" />
+          <form id="joinByCodeForm" class="d-flex gap-1">
+            <input type="text" id="joinByCodeInput" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Join by code" style="width: 150px;" />
+            <button type="submit" class="btn btn-outline-light btn-sm">Join</button>
+          </form>
+        </div>
+
+        <div id="streamBrowsePane">
+          <div class="row g-3" id="roomsContainer"></div>
+        </div>
+        <div id="streamFavouritesPane" class="hidden">
+          <div class="row g-3" id="favouriteRoomsContainer"></div>
+        </div>
+      </div>
+
+      <!-- VIEW: POMODORO -->
+      <div id="view-pomodoro" class="app-view hidden">
+        <h2 class="fw-bold mb-4">Pomodoro Timer</h2>
+
+        <div class="card p-4 border-0 text-center mx-auto" style="background-color: var(--card-bg); max-width: 480px;">
+          <div class="d-flex justify-content-center gap-3 mb-4">
+            <div>
+              <label class="form-label small text-secondary">Work (mins)</label>
+              <input type="number" id="pomoWorkInput" class="form-control bg-dark text-light border-secondary text-center" value="25" min="1" max="120" />
+            </div>
+            <div>
+              <label class="form-label small text-secondary">Break (mins)</label>
+              <input type="number" id="pomoBreakInput" class="form-control bg-dark text-light border-secondary text-center" value="5" min="1" max="60" />
+            </div>
+          </div>
+
+          <div class="small text-secondary mb-2" id="pomoSessionLabel">Work Session</div>
+          <h1 class="display-1 fw-bold text-primary mb-4" id="pomodoroDisplay">25:00</h1>
+
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-primary px-4 py-2" id="pomoStartBtn" type="button">Start</button>
+            <button class="btn btn-outline-secondary px-4 py-2" id="pomoResetBtn" type="button">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: NOTES -->
+      <div id="view-notes" class="app-view hidden">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="fw-bold mb-0">Notes</h2>
+          <span class="text-secondary small" id="notesStatus"></span>
+        </div>
+        <textarea id="notesTextarea" class="form-control bg-dark text-light border-secondary p-3" rows="12" placeholder="Type your quick notes here..."></textarea>
+      </div>
+
+      <!-- VIEW: TASKS -->
+      <div id="view-tasks" class="app-view hidden">
+        <h2 class="fw-bold mb-4">Tasks & To-Dos</h2>
+        <div class="card p-4 border-0 mb-4" style="background-color: var(--card-bg);">
+          <form id="taskForm" class="d-flex gap-2">
+            <input type="text" id="newTaskInput" class="form-control bg-dark text-light border-secondary" placeholder="Add a new task..." required />
+            <button type="submit" class="btn btn-primary px-4">Add Task</button>
+          </form>
+        </div>
+        <div id="taskListContainer" class="d-flex flex-column gap-2"></div>
+      </div>
+
+      <!-- VIEW: ALARM -->
+      <div id="view-alarm" class="app-view hidden">
+        <h2 class="fw-bold mb-4">Alarm</h2>
+        <div class="card p-4 border-0" style="background-color: var(--card-bg); max-width: 480px;">
+          <label class="form-label text-secondary">Set Local Time Alarm</label>
+          <div class="d-flex gap-2 mb-3">
+            <input type="time" id="alarmTimeInput" class="form-control bg-dark text-light border-secondary" required />
+            <button class="btn btn-primary" id="setAlarmBtn">Set Alarm</button>
+          </div>
+          <div id="activeAlarmsList" class="d-flex flex-column gap-2"></div>
+        </div>
+      </div>
+
+      <!-- VIEW: ROOM DETAIL (camera/mic, chat, participants, focus timer) -->
+      <div id="view-room-detail" class="app-view hidden">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+          <div>
+            <h2 class="fw-bold mb-1" id="roomDetailName">Room</h2>
+            <div class="text-secondary small mb-1" id="roomDetailMeta"></div>
+            <div class="text-secondary small" id="roomDetailDescription"></div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-danger btn-sm hidden" id="closeRoomBtn">Close Room</button>
+            <button class="btn btn-outline-light btn-sm" id="leaveRoomBtn">Leave Room</button>
+          </div>
+        </div>
+
+        <div id="roomInviteWrap" class="d-flex align-items-center gap-2 mb-3 hidden">
+          <span class="text-secondary small">Invite code:</span>
+          <input type="text" id="roomInviteCode" class="form-control form-control-sm bg-dark text-light border-secondary" style="width: 200px;" readonly />
+          <button class="btn btn-sm btn-outline-light" id="copyInviteBtn"><i class="bi bi-clipboard"></i></button>
+        </div>
+
+        <div class="card p-3 border-0 mb-3" style="background-color: var(--card-bg);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-secondary text-uppercase small mb-0">Camera & Mic</h6>
+            <div class="d-flex gap-2">
+              <button class="icon-btn" id="toggleMicBtn" title="Mute microphone"><i class="bi bi-mic-fill"></i></button>
+              <button class="icon-btn" id="toggleCamBtn" title="Turn off camera"><i class="bi bi-camera-video-fill"></i></button>
+            </div>
+          </div>
+          <div id="videoGrid" class="video-grid"></div>
+        </div>
+
+        <div class="card p-3 border-0 mb-3 d-flex flex-row justify-content-between align-items-center flex-wrap gap-2" style="background-color: var(--card-bg);">
+          <span class="text-light" id="roomFocusLabel">No focus session running</span>
+          <div class="d-flex gap-2 align-items-center" id="roomFocusHostControls">
+            <input type="number" id="focusMinutesInput" class="form-control form-control-sm bg-dark text-light border-secondary text-center" style="width: 80px;" value="25" min="1" max="180" />
+            <button class="btn btn-sm btn-primary" id="startFocusBtn">Start Focus Session</button>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-lg-8">
+            <div class="card p-3 border-0" style="background-color: var(--card-bg);">
+              <div id="roomChatMessages"></div>
+              <form id="roomChatForm" class="d-flex gap-2 mt-3">
+                <input type="text" id="roomChatInput" class="form-control bg-dark text-light border-secondary" placeholder="Message the room..." autocomplete="off" />
+                <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
+              </form>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div class="card p-3 border-0" style="background-color: var(--card-bg);">
+              <h6 class="fw-bold text-secondary text-uppercase small mb-2">Who's here</h6>
+              <div id="roomParticipantsList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: Profile Setup -->
+  <div class="modal fade" id="profileSetupModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content app-modal">
+        <form id="profileSetupForm">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Welcome to StudyHub</h5>
+          </div>
+          <div class="modal-body">
+            <label class="form-label text-secondary">What should we call you?</label>
+            <input type="text" id="profileNameInput" class="form-control" placeholder="Your display name" maxlength="24" required autofocus />
+            <p class="text-secondary small mt-2 mb-0">This is shown to others in shared study rooms.</p>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="submit" class="btn btn-primary">Continue</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Create Room -->
+  <div class="modal fade" id="createRoomModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content app-modal">
+        <form id="createRoomForm">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Create a Room</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body d-flex flex-column gap-3">
+            <div>
+              <label class="form-label text-secondary">Room name</label>
+              <input type="text" id="createRoomName" class="form-control" maxlength="60" required />
+            </div>
+            <div>
+              <label class="form-label text-secondary">Description</label>
+              <input type="text" id="createRoomDescription" class="form-control" maxlength="160" placeholder="What's this room for?" />
+            </div>
+            <div class="row g-2">
+              <div class="col">
+                <label class="form-label text-secondary">Category</label>
+                <select id="createRoomCategory" class="form-select">
+                  <option>Deep Focus</option>
+                  <option>STEM</option>
+                  <option>Languages</option>
+                  <option>Revision</option>
+                  <option>General</option>
+                </select>
+              </div>
+              <div class="col">
+                <label class="form-label text-secondary">Capacity</label>
+                <input type="number" id="createRoomCapacity" class="form-control" value="10" min="2" max="50" />
+              </div>
+            </div>
+            <div>
+              <label class="form-label text-secondary">Visibility</label>
+              <select id="createRoomVisibility" class="form-select">
+                <option value="public">Public — anyone can find and join</option>
+                <option value="private">Private — join by invite code + password</option>
+              </select>
+            </div>
+            <div id="createRoomPasswordWrap" class="hidden">
+              <label class="form-label text-secondary">Room password</label>
+              <input type="password" id="createRoomPassword" class="form-control" placeholder="Shared with people you invite" />
+            </div>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="submit" class="btn btn-primary">Create Room</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Join Private Room -->
+  <div class="modal fade" id="joinPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content app-modal">
+        <form id="joinPasswordForm">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Join "<span id="joinPasswordRoomName"></span>"</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label text-secondary">Room password</label>
+            <input type="password" id="joinPasswordInput" class="form-control" required autofocus />
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="submit" class="btn btn-primary">Join Room</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Background Customization -->
+  <div class="modal fade" id="backgroundModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content app-modal">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title">Customize Background</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary small">Pick a photo from your device to use as the workspace background, or keep the default animated look.</p>
+          <div id="bgDropZone">
+            <i class="bi bi-cloud-arrow-up fs-2 text-secondary"></i>
+            <p class="mb-0 mt-2 text-secondary small">Click or drag an image here</p>
+            <input type="file" id="bgFileInput" accept="image/*" class="hidden" />
+          </div>
+          <img id="bgPreviewImg" class="hidden" alt="Current background preview" />
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-light" id="bgResetBtn">Reset to Default</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
