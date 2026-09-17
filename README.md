@@ -1,160 +1,267 @@
-# StudyHub Workspace
+# 🚦 Smart Traffic AI Management System
 
-A dark-themed co-working dashboard: tasks, notes, alarms, a Pomodoro timer,
-and live study rooms with camera/mic calling and chat.
+**AI-Powered Urban Traffic Management & Emergency Green Corridor System**
 
-## What's new in this version
+An intelligent traffic control platform that combines real-time IoT simulation, explainable machine learning, macroscopic traffic flow physics, and adaptive signal optimization to reduce urban gridlock, give emergency vehicles zero-delay green corridors, and provide commuters with accessible, real-time navigation.
 
-The previous version simulated "real time" rooms purely with
-`localStorage` and the browser's `storage` event, which only ever worked
-between tabs on the *same browser*. That's gone. Rooms, presence, chat,
-and the focus timer are now backed by a real Node server
-(`server.js`) over Socket.IO — which is also what makes the new camera/mic
-calling possible at all, since two different devices can only set up a
-WebRTC call if there's a real channel between them to exchange connection
-info over first.
+> Built for [Hackathon/Event Name] — Problem Statement 5: Traffic Congestion Prediction Agent (Smart City domain).
 
-- **Camera & mic calling** (`public/js/webrtc.js`) — join a room and you
-  automatically connect to everyone already there over WebRTC (mesh
-  topology), with mute/camera-off toggles. Signaling (offer/answer/ICE
-  candidates) rides over the same Socket.IO connection as everything
-  else; the actual audio/video never passes through the server.
-- **Dashboard** now shows your open tasks and upcoming alarms at a
-  glance, instead of a room grid.
-- **Stream** is now the single home for rooms: browsing, search, join by
-  code, and Favourites (previously its own sidebar entry) are all tabs
-  inside it. Joining a room takes you to a room screen — video grid, chat,
-  participants, focus timer — that's reached only from, and returns only
-  to, Stream.
-- **Room passwords are now actually hashed server-side** (Node's
-  `crypto.scryptSync`, per-room salt, `timingSafeEqual` comparison) and
-  never sent to the client. The previous version computed a
-  non-cryptographic hash *client-side*, which was openly documented as a
-  mild deterrent rather than real protection — this is a genuine step up,
-  though there's still no real user authentication (see Limitations).
+---
 
-Everything else — tasks, notes, alarms, Pomodoro, your profile, your
-background image, your favourite rooms — is still just `localStorage` and
-needs no server. Those work identically whether or not `server.js` is
-running.
+## 📌 Table of Contents
 
-## Running it
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [System Architecture](#system-architecture)
+- [The AI & Mathematical Engines](#the-ai--mathematical-engines)
+- [Accessibility & Inclusivity](#accessibility--inclusivity)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [API Overview](#api-overview)
+- [FAQ / Judge Q&A](#faq--judge-qa)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+---
+
+## Overview
+
+Traffic congestion in urban areas is dynamic — it shifts continuously based on time of day, weather, road incidents, and travel patterns. This project builds an AI-powered system that:
+
+- Predicts and classifies congestion levels across road segments in real time
+- Explains *why* a segment is congested (explainable AI, not a black box)
+- Identifies peak-time windows and high-risk zones
+- Dynamically reroutes traffic around blockages and hazards
+- Grants emergency vehicles a preemptive "green wave" corridor
+- Presents everything through an accessible, live-updating map dashboard
+
+The system runs as a simulated smart-city environment, making it fully demoable without requiring live municipal traffic sensors.
+
+---
+
+## Key Features
+
+| Feature | Description |
+|---|---|
+| **Live Congestion Prediction** | Multi-factor scoring engine predicts congestion per road segment in real time |
+| **Explainable AI (XAI)** | Every prediction is broken down by contributing factor (e.g., density, rain, rush hour) |
+| **Traffic Physics Modeling** | Greenshields macroscopic flow model estimates speed breakdown before gridlock occurs |
+| **Adaptive Signal Control** | Green-phase durations dynamically allocated based on real-time queue lengths |
+| **Upstream Queue Metering** | Prevents intersection spillback by holding upstream traffic when downstream nears capacity |
+| **Emergency Green Corridor** | Ambulance routes get preemptive green signals 30 seconds ahead of arrival |
+| **Dynamic Diversion Routing** | Modified Dijkstra routing reroutes commuters around hazards, saving 13+ minutes |
+| **Accessible Navigation** | One-click handoff to Google Maps turn-by-turn navigation |
+| **Voice Alerts (TTS)** | Web Speech API announces high-priority alerts for visually impaired users |
+| **High-Contrast / Font Scaling** | WCAG-compliant accessibility modes built into the UI |
+
+---
+
+## Tech Stack
+
+| Layer | Technologies | Purpose |
+|---|---|---|
+| **Runtime** | Node.js (v18+) | Asynchronous, event-driven server handling concurrent simulations |
+| **Backend Framework** | Express.js | REST APIs for telemetry, signal overrides, route queries, incident injection |
+| **Real-Time Layer** | Socket.IO (WebSockets) | Live city-state streaming (signals, vehicle counts, alerts) at 1–5 Hz |
+| **Data Store** | In-memory graph data store | Road network as a graph (nodes = intersections, edges = roads) for sub-millisecond routing |
+| **Frontend** | Vanilla HTML5 / CSS3 / ES6+ JS | Lightweight, dependency-free client with no virtual-DOM overhead |
+| **Design System** | Custom Vanilla CSS ("Cyber Glassmorphism") | Dark UI theme, responsive flex/grid layout, accessibility tokens |
+| **Geospatial & Maps** | Leaflet.js + Google Maps Tile API | High-performance GIS rendering; Street/Satellite/Terrain/Live Traffic layers |
+| **Data Visualization** | Chart.js | Volume curves, Greenshields speed-density curves, accident risk charts |
+| **Accessibility** | Web Speech API, ARIA, WCAG 2.1 | TTS alerts, screen-reader support, high-contrast mode, font scaling |
+| **Testing** | Node Test Runner | Unit/integration tests for prediction accuracy, thresholds, routing fallbacks |
+
+---
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        CLIENT (Browser)                       │
+│   Leaflet Map · Chart.js Dashboards · Accessibility Layer      │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ WebSocket (Socket.IO) + REST
+┌───────────────────────────▼─────────────────────────────────┐
+│                     EXPRESS.JS SERVER                         │
+│                                                                │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌─────────────┐ │
+│  │ congestionEngine  │  │  signalEngine    │  │ emergency   │ │
+│  │ (XAI prediction)  │  │  (adaptive       │  │ Engine      │ │
+│  │                    │  │   signals)       │  │ (green wave)│ │
+│  └──────────────────┘  └──────────────────┘  └─────────────┘ │
+│  ┌──────────────────┐  ┌──────────────────┐                  │
+│  │  routingEngine    │  │  analytics.js    │                  │
+│  │  (Dijkstra)        │  │  (Greenshields)  │                  │
+│  └──────────────────┘  └──────────────────┘                  │
+│                                                                │
+│           In-Memory Road Network Graph (nodes/edges)          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Each intersection and corridor is designed as an independent state machine, making the system modular and horizontally scalable.
+
+---
+
+## The AI & Mathematical Engines
+
+### A. Explainable Congestion Prediction Engine (`congestionEngine.js`)
+A feature-weighted, multi-factor scoring model inspired by Random Forest Regression.
+
+**Inputs:** vehicle density, road capacity, time-of-day rush multipliers, rainfall intensity (mm/h), active incident/lane blockages.
+
+**Output:** an explainability breakdown showing each factor's contribution, e.g.:
+> *35% Traffic Density + 30% Rain Waterlogging + 25% Evening Peak*
+
+### B. Traffic Flow Physics — Greenshields Macroscopic Model (`analytics.js`)
+Based on the classic transportation engineering equation:
+
+$$v = v_f \left(1 - \frac{k}{k_j}\right)$$
+
+- `v` — current speed (km/h)
+- `v_f` — free-flow speed limit
+- `k` — traffic density (vehicles/km)
+- `k_j` — jam density (gridlock threshold)
+
+Used to predict speed breakdowns and shockwaves *before* gridlock occurs.
+
+### C. Upstream Queue Metering & Adaptive Signals (`signalEngine.js`)
+- **Adaptive cycle allocation** (Webster's Method derivative): green-phase duration scales with incoming queue length.
+- **Upstream hold (gating):** if a downstream segment exceeds 85% capacity, the upstream signal turns red to prevent spillback.
+
+### D. Emergency Green Wave Corridor (`emergencyEngine.js`)
+Calculates an ambulance's forward trajectory and preemptively turns corridor signals green ~30 seconds ahead of arrival, holding cross-traffic red. Normal adaptive operation resumes once the vehicle clears the intersection.
+
+### E. Dynamic Diversion Routing (`routingEngine.js`)
+A modified Dijkstra's shortest-path algorithm with a dynamic cost function:
+
+$$\text{Cost} = \text{Distance} \times \left(\frac{\text{Free Flow Speed}}{\text{Current Speed}}\right) + \text{Hazard Penalties}$$
+
+Automatically reroutes around blocked or flooded roads, saving commuters up to 13+ minutes on affected routes.
+
+---
+
+## Accessibility & Inclusivity
+
+- **Google Maps handoff** — one-click "Open Live Route in Google Maps" with real-time GPS and turn-by-turn voice navigation.
+- **Web Speech API (TTS)** — audibly announces high-priority alerts (e.g., *"Alert: Tech Park Junction — high accident risk due to rain and heavy rush"*).
+- **High-contrast theme** — WCAG AAA–compliant black/neon mode for color-blind users.
+- **Font scaling** — one-toggle 15% increase in HUD/KPI text size for low-vision users.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js v18 or higher
+- npm
+
+### Installation
 
 ```bash
+git clone https://github.com/<your-username>/smart-traffic-ai.git
+cd smart-traffic-ai
 npm install
+```
+
+### Running locally
+
+```bash
 npm start
 ```
 
-Then open **http://localhost:3000**. That's it — `server.js` serves the
-whole frontend out of `public/`, so there's nothing else to configure for
-local use.
+The server starts on `http://localhost:3000` by default. Open it in a browser to view the live dashboard.
 
-If you only care about tasks/notes/alarms/Pomodoro, you technically don't
-need the server at all — `public/index.html` still works opened directly.
-Stream (rooms, chat, camera) specifically needs the server, since that's
-what makes cross-device sync and WebRTC signaling possible; opened without
-it, the app shows a toast explaining that instead of silently failing.
-
-### Environment
-
-- `PORT` — defaults to `3000`.
-- Requires Node 18+.
-
-## Deploying it
-
-This is a single Node process with no database — deploy it anywhere that
-runs a persistent Node process (Render, Railway, Fly.io, a plain VPS,
-etc.). Static hosts (Netlify/Vercel's static tier, GitHub Pages) won't
-work for Stream, since there's no server to connect to — the rest of the
-app (tasks/notes/alarms/Pomodoro) would still work if you deployed only
-`public/` somewhere static, but you'd lose rooms entirely.
-
-Typical steps on a platform like Render/Railway:
-1. Point it at this repo, build command `npm install`, start command
-   `npm start`.
-2. Set `PORT` if the platform requires a specific one (most inject it
-   automatically, which `server.js` already reads from `process.env.PORT`).
-3. Done — no database, no extra services required for a single instance.
-
-## Tests
-
-Two test suites, both drive the *real* code (not mocks of it):
+### Running tests
 
 ```bash
-node test/integration.js   # starts the real server, drives it with two
-                            # real socket.io-client connections through
-                            # room create/join/password/capacity/chat/
-                            # WebRTC-signal-relay/focus-timer/host-
-                            # reassignment/disconnect-cleanup
-node test/client.js        # loads the real index.html + all real
-                            # frontend JS into a simulated browser (jsdom)
-                            # with mocked getUserMedia/RTCPeerConnection/
-                            # Socket.IO, and exercises dashboard sync,
-                            # room browsing, favourites, joining, camera
-                            # call setup, chat, and mic/cam toggles
+npm test
 ```
 
-Both currently pass in full (28/28 and 33/33 checks). Neither test
-requires network access or a real camera/microphone.
+### Environment variables
 
-## Known limitations (being upfront about these)
+Create a `.env` file in the root directory:
 
-- **No real user accounts.** A "user" is an id the browser generates for
-  itself on first visit and remembers in `localStorage`. There's nothing
-  stopping someone from clearing storage and getting a new identity, or
-  (with some effort) impersonating an id they've seen. Room passwords are
-  now properly hashed server-side, but that's access control for a room,
-  not authentication of a person.
-- **State lives in memory, in one process.** Perfectly fine for a single
-  deployed instance — simple, no database needed. Running more than one
-  instance behind a load balancer would need shared state (e.g. the
-  Socket.IO Redis adapter), since two instances otherwise can't see each
-  other's rooms. Restarting the server clears all rooms (the 5 default
-  ones reseed automatically); it does *not* touch anyone's localStorage
-  data (tasks, notes, etc.).
-- **Video calling is full mesh, capped at 8 connections per person.**
-  Every participant connects directly to every other one, which is simple
-  and works well for small groups but costs each device more bandwidth
-  and CPU as the room grows. Beyond 8 simultaneous connections, additional
-  participants are still fully in the room (chat, presence, focus timer)
-  just without an automatic video connection. Real scale (dozens of
-  people) needs an SFU (LiveKit, mediasoup, Janus, etc.) instead of mesh
-  — a bigger undertaking, out of scope here.
-- **STUN only, no TURN server.** Most networks (home wifi, most offices,
-  mobile data) connect fine with just the public STUN server configured
-  in `webrtc.js`. Strict corporate firewalls or some mobile carrier NATs
-  sometimes need a TURN relay to connect at all — if calls fail to
-  connect specifically on such a network, that's almost always why. Adding
-  one (e.g. via a provider like Twilio, or self-hosted coturn) is a
-  config change in `webrtc.js`'s `ICE_SERVERS`, not a redesign.
-- **Disconnect grace period is 10 seconds.** A refresh or brief network
-  blip while in a room won't remove you; going away for longer will.
+```env
+PORT=3000
+GOOGLE_MAPS_API_KEY=your_api_key_here
+```
 
-## Project layout
+---
+
+## Project Structure
 
 ```
-server.js              Express + Socket.IO backend (rooms, chat, WebRTC signaling relay)
-package.json
-public/
-  index.html
-  styles.css
-  js/
-    utils.js            shared helpers (escaping, ids, toasts)
-    storage.js           localStorage wrapper + key registry
-    profile.js            local identity (name shown to others)
-    background.js          custom background image picker
-    navigation.js           view switcher
-    header.js                 clock, greeting, quote, alarm-check tick
-    tasks.js                    tasks (CRUD), localStorage-backed
-    alarms.js                    alarms, localStorage-backed
-    dashboard.js                  dashboard's task/alarm summary panels
-    pomodoro.js                    Pomodoro timer
-    notes.js                        notes, localStorage-backed
-    friends.js                       friends tabs (static/local, unchanged)
-    webrtc.js                         camera/mic calling (mesh WebRTC)
-    rooms.js                          rooms/chat/presence, Socket.IO-backed
-    app.js                             bootstraps every feature on load
-test/
-  integration.js         server test (real server + socket.io-client)
-  client.js              frontend test (real files + jsdom + mocks)
+smart-traffic-ai/
+├── server/
+│   ├── engines/
+│   │   ├── congestionEngine.js   # XAI congestion prediction
+│   │   ├── signalEngine.js       # Adaptive signal control
+│   │   ├── emergencyEngine.js    # Green corridor preemption
+│   │   ├── routingEngine.js      # Dynamic diversion routing
+│   │   └── analytics.js          # Greenshields flow model
+│   ├── graph/                    # In-memory road network graph
+│   ├── routes/                   # Express REST endpoints
+│   └── socket/                   # Socket.IO event handlers
+├── public/
+│   ├── index.html
+│   ├── css/                      # Cyber glassmorphism design system
+│   └── js/                       # Map, charts, accessibility layer
+├── tests/
+├── .env.example
+├── package.json
+└── README.md
 ```
+
+---
+
+## API Overview
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/segments` | List all road segments with current congestion state |
+| `GET` | `/api/predict?segment_id=&time=` | Predicted congestion level + XAI breakdown |
+| `GET` | `/api/peak-times?segment_id=` | Historical peak congestion windows |
+| `POST` | `/api/incident` | Inject an incident (accident, flooding, closure) |
+| `POST` | `/api/emergency/dispatch` | Trigger a green-corridor emergency route |
+| `GET` | `/api/route?from=&to=` | Get an optimal (hazard-aware) route |
+
+Real-time updates (signal states, vehicle counts, alerts) stream over a Socket.IO WebSocket connection at 1–5 Hz.
+
+---
+
+## FAQ / Judge Q&A
+
+**Q: Why Leaflet with Google Maps tiles instead of only the Google Maps JavaScript SDK?**
+Leaflet provides lightweight, hardware-accelerated rendering for hundreds of moving vehicles, polylines, and signal markers without heavy API quota usage. We combine Leaflet's rendering performance with official Google Maps tile layers (Street, Satellite, Traffic, Terrain) and direct Google Maps deep-links for native turn-by-turn voice navigation.
+
+**Q: How do you handle real-time concurrency?**
+WebSocket rooms via Socket.IO. Instead of client polling, the server broadcasts state deltas ("ticks") at 1 Hz, so clients receive live telemetry with low latency.
+
+**Q: Is the data persistent or in-memory?**
+Real-time traffic control needs sub-millisecond reads/writes, so the live road network graph is kept in memory with atomic signal transactions. REST APIs expose historical logs for external/municipal integration.
+
+**Q: Can this be deployed to an entire city?**
+Yes — the architecture is modular. Each intersection/corridor runs as an independent state machine, so a production deployment could partition the city into zone-based microservices connected via a message broker (e.g., Apache Kafka or Redis Pub/Sub).
+
+---
+
+## Roadmap
+
+- [ ] Swap synthetic/simulated data for a real historical traffic dataset
+- [ ] Add persistent storage (PostgreSQL/TimescaleDB) for historical analytics
+- [ ] Replace scoring-based XAI model with a trained ML model (Random Forest / XGBoost)
+- [ ] Multi-city / multi-zone deployment support via message broker
+- [ ] Mobile-responsive commuter app view
+
+---
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+### Acknowledgements
+
+Built with Node.js, Express, Socket.IO, Leaflet.js, and Chart.js. Traffic flow modeling based on the Greenshields (1935) macroscopic traffic model.
