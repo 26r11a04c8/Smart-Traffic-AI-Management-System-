@@ -469,7 +469,8 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`[SmartTrafficAI] Server active on http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[SmartTrafficAI] Local Access:    http://localhost:${PORT}`);
+  console.log(`[SmartTrafficAI] Network Access:  http://192.168.43.192:${PORT} (Share this with friends on same Wi-Fi)`);
   console.log(`[SmartTrafficAI] Traffic Decision Pipeline & Simulation Tick Engine running`);
 });
