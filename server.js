@@ -24,6 +24,7 @@ const io = new Server(server, {
 });
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'frontend')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Helper to compile full current state with all AI inferences

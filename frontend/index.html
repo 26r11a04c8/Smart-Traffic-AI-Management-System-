@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA-TRAFFIC // AI-Powered Smart City Traffic & Emergency Response Platform</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Top Master Navigation & Command Bar -->
+  <header class="master-header">
+    <div class="brand-container">
+      <div class="brand-icon">
+        <span class="pulse-ring"></span>
+        🚦
+      </div>
+      <div>
+        <h1 class="brand-title">AURA // SMART TRAFFIC AI</h1>
+        <div class="brand-subtitle">Autonomous City Traffic Flow & Emergency Green Corridor OS</div>
+      </div>
+    </div>
+
+    <!-- Sim Telemetry & Clock -->
+    <div class="telemetry-bar">
+      <div class="telemetry-item time-pill">
+        <span class="icon">🕒</span>
+        <div>
+          <span class="label">SIM TIME</span>
+          <span id="sim-clock" class="value">17:00:00</span>
+        </div>
+      </div>
+
+      <div class="telemetry-item weather-pill" id="weather-indicator">
+        <span class="icon" id="weather-icon">🌧️</span>
+        <div>
+          <span class="label" id="weather-label">WEATHER RISK</span>
+          <span id="weather-value" class="value text-warning">Heavy Rain 45mm/h</span>
+        </div>
+      </div>
+
+      <div class="telemetry-item sim-status-pill">
+        <span class="status-dot" id="sim-status-dot"></span>
+        <div>
+          <span class="label">ENGINE</span>
+          <span id="sim-status-text" class="value">ACTIVE (1x)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation Controls -->
+    <div class="header-actions">
+      <div class="sim-btn-group">
+        <button id="btn-sim-play" class="btn btn-icon active" title="Start/Resume Simulation">▶</button>
+        <button id="btn-sim-pause" class="btn btn-icon" title="Pause Simulation">⏸</button>
+        <button id="btn-sim-speed-1" class="btn btn-speed active" title="1x Speed">1x</button>
+        <button id="btn-sim-speed-2" class="btn btn-speed" title="2x Speed">2x</button>
+        <button id="btn-sim-speed-5" class="btn btn-speed" title="5x Speed">5x</button>
+        <button id="btn-sim-reset" class="btn btn-icon" title="Reset Simulation">🔄</button>
+      </div>
+
+      <!-- Quick Demo Preset Dropdown / Scenarios -->
+      <div class="scenario-actions">
+        <button id="btn-eval-scenario" class="btn btn-primary glow-pulse" title="Runs Section 23 Evaluation Scenario">
+          ⚡ 5:00 PM Office Rush + Rain Demo
+        </button>
+        <button id="btn-quick-ambulance" class="btn btn-emergency">
+          🚑 Dispatch Ambulance
+        </button>
+      </div>
+
+      <!-- View Switcher Tabs -->
+      <div class="view-tabs">
+        <button id="tab-dashboard" class="tab-btn active">
+          <span>🚦 Control Room</span>
+        </button>
+        <button id="tab-navigation" class="tab-btn">
+          <span>🧭 Commuter Navigation</span>
+        </button>
+        <button id="tab-analytics" class="tab-btn">
+          <span>📊 AI Analytics</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scenario Quick Ribbon -->
+  <div class="scenario-ribbon">
+    <div class="ribbon-label">SIMULATION PRESETS & INJECTIONS:</div>
+    <button class="ribbon-chip" data-preset="heavy_rain">🌧️ Heavy Rainfall (55mm/h)</button>
+    <button class="ribbon-chip" data-preset="accident_hotspot">🚨 Trigger Accident on Tech Junction</button>
+    <button class="ribbon-chip" data-preset="fire_hazard">🔥 Road Block: Fire Hazard</button>
+    <button class="ribbon-chip" data-preset="construction">🚧 Construction Zone (RD_7)</button>
+    <button class="ribbon-chip" data-preset="school_rush">🎒 School Rush Hour (15:30)</button>
+    <button class="ribbon-chip text-muted" data-preset="clear">🔄 Clear All Incidents</button>
+  </div>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <main class="main-content">
+    
+    <!-- ==================== VIEW 1: CONTROL ROOM DASHBOARD ==================== -->
+    <section id="view-dashboard" class="app-view active">
+      <!-- Top KPI Row -->
+      <div class="kpi-grid">
+        <div class="kpi-card" id="kpi-congestion">
+          <div class="kpi-header">
+            <span class="kpi-title">CITY CONGESTION INDEX</span>
+            <span class="kpi-badge badge-warning" id="kpi-congestion-badge">HIGH</span>
+          </div>
+          <div class="kpi-main">
+            <span class="kpi-val" id="kpi-congestion-val">74%</span>
+            <span class="kpi-trend">▲ +32% Evening Rush</span>
+          </div>
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill" id="kpi-congestion-fill" style="width: 74%;"></div>
+          </div>
+        </div>
+
+        <div class="kpi-card" id="kpi-holds">
+          <div class="kpi-header">
+            <span class="kpi-title">UPSTREAM QUEUE HOLDS</span>
+            <span class="kpi-badge badge-danger" id="kpi-holds-badge">ACTIVE</span>
+          </div>
+          <div class="kpi-main">
+            <span class="kpi-val" id="kpi-holds-val">1 Junction</span>
+            <span class="kpi-trend">Downstream Overflow Metered</span>
+          </div>
+          <div class="kpi-subtext" id="kpi-holds-desc">Central Square holding RD_1 entry</div>
+        </div>
+
+        <div class="kpi-card" id="kpi-emergency">
+          <div class="kpi-header">
+            <span class="kpi-title">GREEN CORRIDOR STATUS</span>
+            <span class="kpi-badge badge-success" id="kpi-emergency-badge">STANDBY</span>
+          </div>
+          <div class="kpi-main">
+            <span class="kpi-val" id="kpi-emergency-val">0 Active</span>
+            <span class="kpi-trend">Lock-Step Clearance Ready</span>
+          </div>
+          <div class="kpi-subtext" id="kpi-emergency-desc">Hospital Hub Trauma route pre-mapped</div>
+        </div>
+
+        <div class="kpi-card" id="kpi-accident">
+          <div class="kpi-header">
+            <span class="kpi-title">ACCIDENT HOTSPOT THREAT</span>
+            <span class="kpi-badge badge-danger">HIGH RISK</span>
+          </div>
+          <div class="kpi-main">
+            <span class="kpi-val" id="kpi-accident-val">Tech Junction</span>
+            <span class="kpi-trend">Rain + Rush Hour Vulnerability</span>
+          </div>
+          <div class="kpi-subtext">AI Recommendation: Extend yellow clearance</div>
+        </div>
+      </div>
+
+      <!-- Dashboard Workspace Grid (Map + Control Panels) -->
+      <div class="dashboard-layout">
+        
+        <!-- Left / Center: Interactive Map Container -->
+        <div class="map-panel">
+          <div class="map-controls-bar">
+            <div class="map-layer-toggles">
+              <span class="layer-title">MAP LAYERS:</span>
+              <label><input type="checkbox" id="layer-traffic" checked> Traffic Congestion</label>
+              <label><input type="checkbox" id="layer-signals" checked> Signals & Queues</label>
+              <label><input type="checkbox" id="layer-accidents" checked> Accident Hotspots</label>
+              <label><input type="checkbox" id="layer-waterlogging" checked> Waterlogging</label>
+              <label><input type="checkbox" id="layer-emergency" checked> Emergency Corridor</label>
+            </div>
+            <div class="map-legend">
+              <span class="legend-item"><span class="color-box bg-low"></span> Low Flow</span>
+              <span class="legend-item"><span class="color-box bg-mod"></span> Moderate</span>
+              <span class="legend-item"><span class="color-box bg-high"></span> Heavy</span>
+              <span class="legend-item"><span class="color-box bg-severe"></span> Severe Gridlock</span>
+              <span class="legend-item"><span class="color-box bg-corridor"></span> 🚑 Green Corridor</span>
+            </div>
+          </div>
+
+          <div id="city-map" class="leaflet-city-map"></div>
+
+          <!-- Live Ambulance Transit Toast Overlay -->
+          <div id="ambulance-overlay" class="ambulance-overlay hidden">
+            <div class="ambulance-card">
+              <div class="amb-header">
+                <span class="amb-siren">🚨</span>
+                <div>
+                  <div class="amb-title">ACTIVE GREEN CORRIDOR IN PROGRESS</div>
+                  <div class="amb-id" id="amb-card-id">AMB-911 // Metro Cardiac Unit 01</div>
+                </div>
+                <span class="badge badge-danger">PRIORITY 1</span>
+              </div>
+              <div class="amb-progress">
+                <div class="amb-progress-bar" id="amb-card-bar" style="width: 35%;"></div>
+              </div>
+              <div class="amb-junctions" id="amb-card-junctions">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: AI Intelligence, Signals & Alerts Panels -->
+        <div class="sidebar-panel">
+          
+          <!-- Tabbed Sidebar Navigation -->
+          <div class="sidebar-tabs">
+            <button class="side-tab-btn active" data-target="panel-ai">🤖 AI Explainability</button>
+            <button class="side-tab-btn" data-target="panel-signals">🚦 Signals & Queue</button>
+            <button class="side-tab-btn" data-target="panel-alerts">🚨 Alerts (<span id="alert-count-badge">2</span>)</button>
+            <button class="side-tab-btn" data-target="panel-incidents">⚠️ Incidents</button>
+          </div>
+
+          <!-- Panel 1: AI Explainability & Diagnostic Details -->
+          <div id="panel-ai" class="side-panel-content active">
+            <div class="panel-section">
+              <div class="section-title">
+                <span>AI DECISION PIPELINE (EXPLAINABILITY)</span>
+                <span class="model-badge">HYBRID RANDOM FOREST & TIME-SERIES</span>
+              </div>
+              <div class="ai-recommendation-card" id="ai-active-recommendation">
+                <div class="ai-rec-header">
+                  <span class="badge badge-warning" id="ai-rec-badge">ACTIVE MITIGATION</span>
+                  <span class="ai-rec-confidence" id="ai-rec-conf">Confidence: 89%</span>
+                </div>
+                <h4 id="ai-rec-title">Upstream Queue Metering & Green Phase Re-allocation</h4>
+                <p id="ai-rec-desc">Signal timing adapted: Northbound arterial green split increased to 50s. Feeder Signal (Central Square) held in RED to protect saturated downstream road RD_1 (93% capacity).</p>
+                
+                <div class="factor-breakdown-title">MAIN CONTRIBUTING FACTORS:</div>
+                <div class="factor-bars" id="ai-factor-bars">
+                  <div class="factor-row">
+                    <span class="factor-label">Traffic Volume Density</span>
+                    <div class="factor-bar-track"><div class="factor-bar-fill bg-high" style="width: 42%;"></div></div>
+                    <span class="factor-val">+42%</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Evening Office Rush Peak</span>
+                    <div class="factor-bar-track"><div class="factor-bar-fill bg-mod" style="width: 28%;"></div></div>
+                    <span class="factor-val">+28%</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Heavy Rainfall & Friction Drop</span>
+                    <div class="factor-bar-track"><div class="factor-bar-fill bg-water" style="width: 18%;"></div></div>
+                    <span class="factor-val">+18%</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Downstream Queue Spillback</span>
+                    <div class="factor-bar-track"><div class="factor-bar-fill bg-danger" style="width: 12%;"></div></div>
+                    <span class="factor-val">+12%</span>
+                  </div>
+                </div>
+
+                <div class="ai-disclaimer">
+                  ⚠️ Note: AI predictions are calculated based on simulated multi-variable sensor inputs for prototype demonstration.
+                </div>
+              </div>
+            </div>
+
+            <!-- Road/Intersection Click Inspector Drawer -->
+            <div class="panel-section" id="inspector-section">
+              <div class="section-title">INSPECTED ROAD / JUNCTION TELEMETRY</div>
+              <div id="inspector-details" class="inspector-card">
+                <div class="inspector-empty">Click any road segment or intersection on the map to inspect live AI telemetry, queue metrics, and control signals.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel 2: Signal Matrix & Upstream Queue Guard -->
+          <div id="panel-signals" class="side-panel-content">
+            <div class="section-title">
+              <span>INTERSECTION SIGNAL CONTROLLER MATRIX</span>
+              <span class="badge badge-info">ADAPTIVE MODE</span>
+            </div>
+            <div class="signals-list" id="signals-matrix-container">
+              <!-- Dynamically populated signal rows -->
+            </div>
+          </div>
+
+          <!-- Panel 3: Traffic Police Alerts Feed -->
+          <div id="panel-alerts" class="side-panel-content">
+            <div class="section-title">
+              <span>TRAFFIC POLICE & CONTROL ROOM ALERTS</span>
+              <button id="btn-clear-alerts" class="btn btn-xs">Acknowledge All</button>
+            </div>
+            <div class="alerts-feed" id="alerts-feed-container">
+              <!-- Dynamically populated alert items -->
+            </div>
+          </div>
+
+          <!-- Panel 4: Incident & Event Injection Dispatcher -->
+          <div id="panel-incidents" class="side-panel-content">
+            <div class="section-title">INCIDENT DISPATCHER & MANAGEMENT</div>
+            
+            <form id="form-add-incident" class="incident-form">
+              <div class="form-group">
+                <label>Incident Type</label>
+                <select id="inc-type" class="form-control">
+                  <option value="ACCIDENT">🚨 Road Traffic Collision</option>
+                  <option value="FIRE">🔥 Fire Emergency Hazard</option>
+                  <option value="CONSTRUCTION">🚧 Road Construction Works</option>
+                  <option value="EVENT">🎪 Major Public Event / Gathering</option>
+                  <option value="FLOOD">🌊 Severe Waterlogging Flood</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Affected Road Segment</label>
+                <select id="inc-road" class="form-control">
+                  <option value="RD_1">RD_1: Central - Tech Main Avenue</option>
+                  <option value="RD_2">RD_2: Tech - School Innovation Blvd</option>
+                  <option value="RD_3">RD_3: Central - Metro Arterial Road</option>
+                  <option value="RD_4">RD_4: Metro - Harbor South Expressway</option>
+                  <option value="RD_7">RD_7: Metro - School Campus Connect</option>
+                  <option value="RD_8">RD_8: Tech - Harbor Ring Bypass</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Incident Name / Description</label>
+                <input type="text" id="inc-name" class="form-control" placeholder="e.g. Tanker Fuel Leak / Metro Dig" value="Emergency Road Hazard">
+              </div>
+
+              <div class="form-group">
+                <label>Blocked Lanes</label>
+                <select id="inc-lanes" class="form-control">
+                  <option value="1">1 Lane Restricted</option>
+                  <option value="2" selected>2 Lanes Closed</option>
+                  <option value="3">Complete Road Block</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-warning w-100">Deploy Incident to Grid</button>
+            </form>
+
+            <div class="active-incidents-list">
+              <div class="section-subtitle">ACTIVE INCIDENTS ON CITY GRID</div>
+              <div id="active-incidents-container">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: USER NAVIGATION INTERFACE ==================== -->
+    <section id="view-navigation" class="app-view">
+      <div class="navigation-layout">
+        
+        <!-- Left: Commuter Route Planner Drawer -->
+        <div class="nav-drawer">
+          <div class="nav-header">
+            <div class="nav-title-box">
+              <span class="nav-icon">🧭</span>
+              <div>
+                <h2>SMART COMMUTER ROUTE NAVIGATOR</h2>
+                <div class="nav-sub">Real-Time Hazard Avoidance & Dynamic Signal Sync</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trip Inputs -->
+          <div class="trip-input-card">
+            <div class="trip-input-row">
+              <span class="trip-dot green"></span>
+              <div class="trip-field">
+                <label>ORIGIN</label>
+                <select id="nav-origin" class="form-control">
+                  <option value="INT_1" selected>Central Square Junction</option>
+                  <option value="INT_2">Tech Park Junction</option>
+                  <option value="INT_3">Metro Interchange Crossing</option>
+                  <option value="INT_4">School Zone Plaza</option>
+                  <option value="INT_5">Harbor Expressway Cross</option>
+                  <option value="INT_6">Hospital Hub Trauma Center</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="trip-divider"></div>
+
+            <div class="trip-input-row">
+              <span class="trip-dot red"></span>
+              <div class="trip-field">
+                <label>DESTINATION</label>
+                <select id="nav-destination" class="form-control">
+                  <option value="INT_1">Central Square Junction</option>
+                  <option value="INT_2">Tech Park Junction</option>
+                  <option value="INT_3">Metro Interchange Crossing</option>
+                  <option value="INT_4" selected>School Zone Plaza</option>
+                  <option value="INT_5">Harbor Expressway Cross</option>
+                  <option value="INT_6">Hospital Hub Trauma Center</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="btn-calculate-route" class="btn btn-primary w-100 mt-3">
+              🔍 Calculate Dynamic Route
+            </button>
+          </div>
+
+          <!-- Dynamic Route Comparison Display -->
+          <div id="route-results-card" class="route-results-container">
+            <!-- Dynamically populated with Original vs AI Alternate Route -->
+          </div>
+
+          <!-- Commuter Safety & Hazard Feeds -->
+          <div class="nav-safety-feed">
+            <div class="safety-title">⚠️ LIVE COMMUTER SAFETY ALERTS ON YOUR ROUTE</div>
+            <div id="nav-alerts-feed" class="safety-feed-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Commuter Map -->
+        <div class="nav-map-container">
+          <div id="commuter-map" class="leaflet-commuter-map"></div>
+          
+          <!-- Commuter Floating Navigation HUD -->
+          <div class="commuter-hud" id="commuter-hud">
+            <div class="hud-stat">
+              <span class="hud-label">ESTIMATED ARRIVAL</span>
+              <span class="hud-value text-success" id="hud-eta">15 mins</span>
+            </div>
+            <div class="hud-divider"></div>
+            <div class="hud-stat">
+              <span class="hud-label">TIME SAVED BY AI DIVERSION</span>
+              <span class="hud-value text-accent" id="hud-saved">⚡ 13 mins saved</span>
+            </div>
+            <div class="hud-divider"></div>
+            <div class="hud-stat">
+              <span class="hud-label">NEXT CORRIDOR STATUS</span>
+              <span class="hud-value" id="hud-status">🟢 Free Flow</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: AI ANALYTICS & CITY INTELLIGENCE ==================== -->
+    <section id="view-analytics" class="app-view">
+      <div class="analytics-container">
+        <div class="analytics-header">
+          <div>
+            <h2>TRAFFIC FLOW INTELLIGENCE & HISTORICAL ANALYTICS</h2>
+            <p>Empirical models, speed-density curves, recurring peak patterns, and accident risk correlation.</p>
+          </div>
+          <div class="analytics-filters">
+            <select id="analytics-filter-day" class="form-control">
+              <option value="today">Today (Active Simulation)</option>
+              <option value="weekday">Typical Weekday Average</option>
+              <option value="weekend">Weekend Pattern</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Analytics Charts Grid -->
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">24-HOUR TRAFFIC VOLUME & RECURRING PEAK SURGES</span>
+              <span class="badge badge-info">School (15:30) & Office (17:00)</span>
+            </div>
+            <div class="chart-body">
+              <canvas id="chart-hourly"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">VEHICLE SPEED VS DENSITY DEGRADATION CURVE</span>
+              <span class="badge badge-warning">Greenshields Model</span>
+            </div>
+            <div class="chart-body">
+              <canvas id="chart-speed-density"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">ACCIDENT HOTSPOT FREQUENCY & RISK INDEX</span>
+              <span class="badge badge-danger">Weather & Intersection Vulnerability</span>
+            </div>
+            <div class="chart-body">
+              <canvas id="chart-accidents"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-header">
+              <span class="chart-title">ADAPTIVE SIGNAL DIVERSION EFFECTIVENESS</span>
+              <span class="badge badge-success">Before vs After AI Intervention</span>
+            </div>
+            <div class="chart-body">
+              <canvas id="chart-effectiveness"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Manual Signal Override -->
+  <div id="modal-override" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="override-modal-title">Manual Signal Override: Central Square</h3>
+        <button id="btn-close-override" class="btn-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Force a specific phase or green clearance wave for traffic control room management.</p>
+        <div class="form-group">
+          <label>Target Direction to Force GREEN</label>
+          <select id="override-direction" class="form-control">
+            <option value="NORTH">Northbound (RD_1)</option>
+            <option value="SOUTH">Southbound (RD_3)</option>
+            <option value="EAST">Eastbound (RD_5)</option>
+            <option value="WEST">Westbound (RD_10)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hold Duration (Seconds)</label>
+          <input type="number" id="override-duration" class="form-control" value="45" min="10" max="120">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-override" class="btn btn-secondary">Cancel</button>
+        <button id="btn-apply-override" class="btn btn-primary">Apply Force Override</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External Libraries -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Application Modules -->
+  <script src="js/map.js"></script>
+  <script src="js/signals.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/analytics.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
