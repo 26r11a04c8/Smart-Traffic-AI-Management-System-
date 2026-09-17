@@ -1,11 +1,12 @@
 {
-  "name": "studyhub-workspace",
-  "version": "2.0.0",
-  "description": "StudyHub: a dark-themed co-working dashboard with tasks, notes, alarms, Pomodoro, and live study rooms with camera/mic calling and chat.",
+  "name": "smart-traffic-ai-system",
+  "version": "1.0.0",
+  "description": "AI-Powered Smart Traffic Management & Emergency Response System with Dynamic Green Corridors, Upstream Queue Metering, and Commuter Navigation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node test/traffic-system-test.js"
   },
   "engines": {
     "node": ">=18"
