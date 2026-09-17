@@ -4,7 +4,7 @@
 
 An intelligent traffic control platform that combines real-time IoT simulation, explainable machine learning, macroscopic traffic flow physics, and adaptive signal optimization to reduce urban gridlock, give emergency vehicles zero-delay green corridors, and provide commuters with accessible, real-time navigation.
 
-> Built for [Hackathon/Event Name] — Problem Statement 5: Traffic Congestion Prediction Agent (Smart City domain).
+>Problem Statement 5: Traffic Congestion Prediction Agent (Smart City domain).
 
 ---
 
