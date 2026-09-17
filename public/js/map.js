@@ -12,6 +12,60 @@ let corridorPolyline = null;
 let incidentMarkers = [];
 let waterlogMarkers = [];
 
+// Google Maps & Carto Base Tile Providers (Accessible, Traffic, Satellite & Dark)
+const MAP_BASE_PROVIDERS = {
+  'google-streets': {
+    name: 'Google Maps (Accessible Street)',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Maps'
+    })
+  },
+  'google-traffic': {
+    name: 'Google Maps (Live Traffic)',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Maps Traffic'
+    })
+  },
+  'google-satellite': {
+    name: 'Google Satellite / Hybrid',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Satellite'
+    })
+  },
+  'google-terrain': {
+    name: 'Google Terrain',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Terrain'
+    })
+  },
+  'dark': {
+    name: 'Cyber Dark Matrix',
+    layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '© CartoDB'
+    })
+  }
+};
+
+let currentCityBaseKey = 'google-streets';
+
+function setCityBaseLayer(key) {
+  if (!cityMap || !MAP_BASE_PROVIDERS[key]) return;
+  if (MAP_BASE_PROVIDERS[currentCityBaseKey]) {
+    cityMap.removeLayer(MAP_BASE_PROVIDERS[currentCityBaseKey].layer);
+  }
+  MAP_BASE_PROVIDERS[key].layer.addTo(cityMap);
+  MAP_BASE_PROVIDERS[key].layer.bringToBack();
+  currentCityBaseKey = key;
+  const selectElem = document.getElementById('select-city-base-map');
+  if (selectElem && selectElem.value !== key) selectElem.value = key;
+}
+
 function initCityMap() {
   const mapElement = document.getElementById('city-map');
   if (!mapElement || cityMap) return;
@@ -24,11 +78,23 @@ function initCityMap() {
     attributionControl: false
   });
 
-  // Base Dark Tile Layer (CartoDB Dark Matter)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    subdomains: 'abcd'
-  }).addTo(cityMap);
+  // Default to Google Maps Accessible Street Layer
+  MAP_BASE_PROVIDERS[currentCityBaseKey].layer.addTo(cityMap);
+
+  // Add Leaflet Native Layer Control for accessibility
+  const baseTree = {};
+  Object.keys(MAP_BASE_PROVIDERS).forEach(k => {
+    baseTree[MAP_BASE_PROVIDERS[k].name] = MAP_BASE_PROVIDERS[k].layer;
+  });
+  L.control.layers(baseTree, null, { position: 'topright' }).addTo(cityMap);
+
+  // Hook up UI base map dropdown
+  const baseSelect = document.getElementById('select-city-base-map');
+  if (baseSelect) {
+    baseSelect.addEventListener('change', (e) => {
+      setCityBaseLayer(e.target.value);
+    });
+  }
 }
 
 function updateCityMap(state) {
@@ -292,10 +358,14 @@ function selectRoadInspector(road, state) {
         Drainage Cap: <strong>${Math.round(road.drainageIndex * 50)} mm/h</strong> | Water Level: <strong>${road.waterLevelMm || 0} mm</strong>
       </div>
 
-      <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.72rem;">
+      <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.72rem; margin-bottom: 8px;">
         <span style="color: var(--accent-cyan); font-weight: 700;">AI Explainability Breakdown:</span><br/>
         ${pred.factors.map(f => `• ${f.name}: <strong>${f.impact}</strong>`).join('<br/>')}
       </div>
+
+      <a href="https://www.google.com/maps/search/?api=1&query=${road.coordinates[0][0]},${road.coordinates[0][1]}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-gmap-access w-100" aria-label="Open Road Segment in Google Maps">
+        🌐 Open Segment in Google Maps (Street & Transit View)
+      </a>
     </div>
   `;
 }
@@ -331,12 +401,19 @@ function selectIntersectionInspector(inter, state) {
         ${inter.adaptiveTimings?.reasoning || 'Standard adaptive cycle active.'}
       </div>
 
-      <button class="btn btn-xs btn-primary w-100" onclick="window.openManualOverrideModal('${inter.id}', '${inter.name}')">
-        ⚙️ Manual Control Room Override
-      </button>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <button class="btn btn-xs btn-primary w-100" onclick="window.openManualOverrideModal('${inter.id}', '${inter.name}')">
+          ⚙️ Manual Control Room Override
+        </button>
+
+        <a href="https://www.google.com/maps/search/?api=1&query=${inter.lat},${inter.lng}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-gmap-access w-100" aria-label="Open Junction in Google Maps">
+          🌐 View Junction in Google Maps (Accessible Live View)
+        </a>
+      </div>
     </div>
   `;
 }
 
 window.initCityMap = initCityMap;
 window.updateCityMap = updateCityMap;
+window.setCityBaseLayer = setCityBaseLayer;

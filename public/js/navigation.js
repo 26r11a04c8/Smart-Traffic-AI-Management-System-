@@ -10,6 +10,52 @@ let alternateRouteLayer = null;
 let navOriginMarker = null;
 let navDestMarker = null;
 
+const COMMUTER_BASE_PROVIDERS = {
+  'google-streets': {
+    name: 'Google Maps (Accessible Street)',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Maps'
+    })
+  },
+  'google-traffic': {
+    name: 'Google Maps (Live Traffic)',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Maps Traffic'
+    })
+  },
+  'google-satellite': {
+    name: 'Google Satellite / Hybrid',
+    layer: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '© Google Satellite'
+    })
+  },
+  'dark': {
+    name: 'Cyber Dark Matrix',
+    layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '© CartoDB'
+    })
+  }
+};
+
+let currentCommuterBaseKey = 'google-streets';
+
+function setCommuterBaseLayer(key) {
+  if (!commuterMap || !COMMUTER_BASE_PROVIDERS[key]) return;
+  if (COMMUTER_BASE_PROVIDERS[currentCommuterBaseKey]) {
+    commuterMap.removeLayer(COMMUTER_BASE_PROVIDERS[currentCommuterBaseKey].layer);
+  }
+  COMMUTER_BASE_PROVIDERS[key].layer.addTo(commuterMap);
+  COMMUTER_BASE_PROVIDERS[key].layer.bringToBack();
+  currentCommuterBaseKey = key;
+  const selectElem = document.getElementById('select-commuter-base-map');
+  if (selectElem && selectElem.value !== key) selectElem.value = key;
+}
+
 function initCommuterMap() {
   const mapElem = document.getElementById('commuter-map');
   if (!mapElem || commuterMap) return;
@@ -20,10 +66,22 @@ function initCommuterMap() {
     attributionControl: false
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    subdomains: 'abcd'
-  }).addTo(commuterMap);
+  // Default to Google Maps Accessible Street Layer
+  COMMUTER_BASE_PROVIDERS[currentCommuterBaseKey].layer.addTo(commuterMap);
+
+  // Add Leaflet Native Layer Control
+  const baseTree = {};
+  Object.keys(COMMUTER_BASE_PROVIDERS).forEach(k => {
+    baseTree[COMMUTER_BASE_PROVIDERS[k].name] = COMMUTER_BASE_PROVIDERS[k].layer;
+  });
+  L.control.layers(baseTree, null, { position: 'topright' }).addTo(commuterMap);
+
+  const baseSelect = document.getElementById('select-commuter-base-map');
+  if (baseSelect) {
+    baseSelect.addEventListener('change', (e) => {
+      setCommuterBaseLayer(e.target.value);
+    });
+  }
 }
 
 async function calculateAndDisplayRoute() {
@@ -161,6 +219,21 @@ function renderRouteResults(data) {
     `;
   }
 
+  // Append Google Maps Accessible Turn-by-Turn Navigation Action
+  const gmapUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
+  cardsHtml += `
+    <div class="gmap-direct-card">
+      <a href="${gmapUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-gmap-accessible" aria-label="Open in Google Maps for Accessible Navigation">
+        <span class="gmap-icon-badge">🗺️</span>
+        <div class="gmap-desc">
+          <strong>Open Live Route in Google Maps</strong>
+          <small>Turn-by-turn voice navigation, wheelchair accessible paths & live GPS traffic sync</small>
+        </div>
+        <span class="gmap-launch-arrow">↗</span>
+      </a>
+    </div>
+  `;
+
   resultsContainer.innerHTML = cardsHtml;
 
   // Build Commuter Safety Alerts Feed
@@ -197,3 +270,4 @@ function refreshCommuterMap() {
 window.initCommuterMap = initCommuterMap;
 window.calculateAndDisplayRoute = calculateAndDisplayRoute;
 window.refreshCommuterMap = refreshCommuterMap;
+window.setCommuterBaseLayer = setCommuterBaseLayer;

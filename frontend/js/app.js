@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupIncidentForm();
   setupModalOverride();
   setupMapLayerListeners();
+  setupAccessibilityModal();
 
   // Initial fetch for state snapshot in case socket connects after load
   fetch('/api/city/state')
@@ -426,8 +427,78 @@ function setupMapLayerListeners() {
   });
 }
 
-// Notification Toast for high severity alerts
+// Notification Toast for high severity alerts & Speech Voice Synthesis
 function showNotificationToast(alert) {
   if (!alert) return;
   console.log('[ALERT TOAST]', alert.severity, alert.location, alert.reason);
+
+  // If Speech Assistant is enabled, announce critical alerts
+  if (localStorage.getItem('aura_speech_alerts') === 'true' && ('speechSynthesis' in window)) {
+    if (alert.severity === 'CRITICAL' || alert.severity === 'HIGH') {
+      const utterance = new SpeechSynthesisUtterance(`Alert. ${alert.location}. ${alert.reason}`);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+}
+
+// Accessibility & Google Maps Preferences Modal Coordinator
+function setupAccessibilityModal() {
+  const modal = document.getElementById('modal-accessibility');
+  const btnOpen = document.getElementById('btn-open-accessibility');
+  const btnClose = document.getElementById('btn-close-accessibility');
+  const btnSave = document.getElementById('btn-save-accessibility');
+
+  const defaultMapSelect = document.getElementById('access-default-map-select');
+  const toggleContrast = document.getElementById('toggle-high-contrast');
+  const toggleFont = document.getElementById('toggle-large-font');
+  const toggleSpeech = document.getElementById('toggle-speech-alerts');
+
+  // Load Saved Preferences
+  const savedMap = localStorage.getItem('aura_base_map') || 'google-streets';
+  const savedContrast = localStorage.getItem('aura_high_contrast') === 'true';
+  const savedFont = localStorage.getItem('aura_large_font') === 'true';
+  const savedSpeech = localStorage.getItem('aura_speech_alerts') === 'true';
+
+  if (defaultMapSelect) defaultMapSelect.value = savedMap;
+  if (toggleContrast) toggleContrast.checked = savedContrast;
+  if (toggleFont) toggleFont.checked = savedFont;
+  if (toggleSpeech) toggleSpeech.checked = savedSpeech;
+
+  // Apply visual modes immediately
+  document.body.classList.toggle('high-contrast', savedContrast);
+  document.body.classList.toggle('large-font', savedFont);
+
+  const openModal = () => modal?.classList.remove('hidden');
+  const closeModal = () => modal?.classList.add('hidden');
+
+  btnOpen?.addEventListener('click', openModal);
+  btnClose?.addEventListener('click', closeModal);
+
+  btnSave?.addEventListener('click', () => {
+    const selectedMap = defaultMapSelect?.value || 'google-streets';
+    const isContrast = !!toggleContrast?.checked;
+    const isFont = !!toggleFont?.checked;
+    const isSpeech = !!toggleSpeech?.checked;
+
+    localStorage.setItem('aura_base_map', selectedMap);
+    localStorage.setItem('aura_high_contrast', isContrast ? 'true' : 'false');
+    localStorage.setItem('aura_large_font', isFont ? 'true' : 'false');
+    localStorage.setItem('aura_speech_alerts', isSpeech ? 'true' : 'false');
+
+    document.body.classList.toggle('high-contrast', isContrast);
+    document.body.classList.toggle('large-font', isFont);
+
+    // Apply base map changes to both maps
+    if (window.setCityBaseLayer) window.setCityBaseLayer(selectedMap);
+    if (window.setCommuterBaseLayer) window.setCommuterBaseLayer(selectedMap);
+
+    // Provide audible confirmation if speech turned on
+    if (isSpeech && ('speechSynthesis' in window)) {
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance('Accessibility preferences saved. Google Maps and voice navigation active.'));
+    }
+
+    closeModal();
+  });
 }

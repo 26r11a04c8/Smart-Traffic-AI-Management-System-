@@ -77,6 +77,9 @@
         <button id="btn-quick-ambulance" class="btn btn-emergency">
           🚑 Dispatch Ambulance
         </button>
+        <button id="btn-open-accessibility" class="btn btn-accessibility" title="Open Accessibility & Google Maps Settings" aria-label="Accessibility & Google Maps Settings">
+          ♿ Accessibility & Maps
+        </button>
       </div>
 
       <!-- View Switcher Tabs -->
@@ -169,8 +172,18 @@
         <!-- Left / Center: Interactive Map Container -->
         <div class="map-panel">
           <div class="map-controls-bar">
+            <div class="map-base-select-wrap">
+              <span class="layer-title">MAP BASE:</span>
+              <select id="select-city-base-map" class="map-base-select" aria-label="Select City Map Base Layer">
+                <option value="google-streets" selected>🗺️ Google Maps (Accessible Street)</option>
+                <option value="google-traffic">🚦 Google Maps (Live Traffic)</option>
+                <option value="google-satellite">🛰️ Google Satellite / Hybrid</option>
+                <option value="google-terrain">⛰️ Google Terrain</option>
+                <option value="dark">🌙 Cyber Dark Matrix</option>
+              </select>
+            </div>
             <div class="map-layer-toggles">
-              <span class="layer-title">MAP LAYERS:</span>
+              <span class="layer-title">LAYERS:</span>
               <label><input type="checkbox" id="layer-traffic" checked> Traffic Congestion</label>
               <label><input type="checkbox" id="layer-signals" checked> Signals & Queues</label>
               <label><input type="checkbox" id="layer-accidents" checked> Accident Hotspots</label>
@@ -424,6 +437,17 @@
 
         <!-- Right: Commuter Map -->
         <div class="nav-map-container">
+          <div class="nav-map-top-bar">
+            <div class="map-base-select-wrap">
+              <span class="layer-title">COMMUTER MAP BASE:</span>
+              <select id="select-commuter-base-map" class="map-base-select" aria-label="Select Commuter Map Base Layer">
+                <option value="google-streets" selected>🗺️ Google Maps (Accessible Street)</option>
+                <option value="google-traffic">🚦 Google Maps (Live Traffic)</option>
+                <option value="google-satellite">🛰️ Google Satellite / Hybrid</option>
+                <option value="dark">🌙 Cyber Dark Matrix</option>
+              </select>
+            </div>
+          </div>
           <div id="commuter-map" class="leaflet-commuter-map"></div>
           
           <!-- Commuter Floating Navigation HUD -->
@@ -539,6 +563,91 @@
       <div class="modal-footer">
         <button id="btn-cancel-override" class="btn btn-secondary">Cancel</button>
         <button id="btn-apply-override" class="btn btn-primary">Apply Force Override</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Accessibility & Google Maps Configuration -->
+  <div id="modal-accessibility" class="modal-backdrop hidden" role="dialog" aria-labelledby="access-modal-title" aria-modal="true">
+    <div class="modal-card modal-card-access">
+      <div class="modal-header">
+        <h3 id="access-modal-title">♿ Accessibility & Google Maps Suite</h3>
+        <button id="btn-close-accessibility" class="btn-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="font-size: 0.85rem;">
+          Configure visual contrast, font scaling, screen reader audio alerts, and direct Google Maps access for assistive devices.
+        </p>
+        
+        <div class="access-setting-card">
+          <div class="access-setting-info">
+            <strong>🗺️ Default Base Map Engine</strong>
+            <small>Powered by Google Maps with high-visibility street names, transit markers & building footprints.</small>
+          </div>
+          <select id="access-default-map-select" class="form-control" style="width: 220px;">
+            <option value="google-streets" selected>Google Maps (Accessible Street)</option>
+            <option value="google-traffic">Google Maps (Live Traffic)</option>
+            <option value="google-satellite">Google Satellite / Hybrid</option>
+            <option value="dark">Cyber Dark Matrix</option>
+          </select>
+        </div>
+
+        <div class="access-setting-card">
+          <div class="access-setting-info">
+            <strong>🌓 High-Contrast Accessibility Mode</strong>
+            <small>Enhances road boundaries, signal borders, and text contrast for color vision impairment.</small>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-high-contrast">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="access-setting-card">
+          <div class="access-setting-info">
+            <strong>🔍 Large Typography & HUD Scaling</strong>
+            <small>Increases UI fonts, status badges, and telemetry pills by 15% for low-vision readability.</small>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-large-font">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="access-setting-card">
+          <div class="access-setting-info">
+            <strong>🔊 Speech Voice Assistant (Web Speech TTS)</strong>
+            <small>Audibly announces ambulance green waves, severe gridlocks, and dynamic diversions.</small>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-speech-alerts">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="access-external-section">
+          <span class="section-subtitle">DIRECT GOOGLE MAPS LOCATIONS (ACCESSIBLE TRANSIT & STREET VIEW)</span>
+          <div class="gmap-shortcuts-grid">
+            <a href="https://www.google.com/maps/search/?api=1&query=12.9700,77.5950" target="_blank" rel="noopener noreferrer" class="gmap-pill-btn">
+              📍 Central Square
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query=12.9800,77.6080" target="_blank" rel="noopener noreferrer" class="gmap-pill-btn">
+              📍 Tech Park Junction
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query=12.9580,77.5900" target="_blank" rel="noopener noreferrer" class="gmap-pill-btn">
+              📍 Metro Interchange
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query=12.9650,77.6200" target="_blank" rel="noopener noreferrer" class="gmap-pill-btn">
+              📍 Hospital Trauma Center
+            </a>
+            <a href="https://www.google.com/maps/search/?api=1&query=12.9850,77.5850" target="_blank" rel="noopener noreferrer" class="gmap-pill-btn">
+              📍 School Zone Plaza
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-save-accessibility" class="btn btn-primary">Save & Apply Preferences</button>
       </div>
     </div>
   </div>
